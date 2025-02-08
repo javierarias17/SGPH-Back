@@ -6,11 +6,10 @@ import javax.validation.constraints.NotNull;
 import co.edu.unicauca.sgph.docente.infrastructure.input.validation.ExisteCodigoDocente;
 import co.edu.unicauca.sgph.docente.infrastructure.output.persistence.entity.EstadoDocenteEnum;
 import co.edu.unicauca.sgph.espaciofisico.infrastructura.input.validation.ValidationGroups;
-import co.edu.unicauca.sgph.persona.infrastructure.input.validation.ExistePersonaPorIdPersona;
 import co.edu.unicauca.sgph.docente.infrastructure.input.validation.ExisteIdPersonaDocente;
 
-@ExisteCodigoDocente(groups = ValidationGroups.OnCreate.class)
-@ExisteIdPersonaDocente(groups = ValidationGroups.OnCreate.class)
+@ExisteCodigoDocente(groups = {ValidationGroups.OnCreate.class, ValidationGroups.OnUpdate.class})
+@ExisteIdPersonaDocente(groups = {ValidationGroups.OnCreate.class, ValidationGroups.OnUpdate.class})
 public class DocenteInDTO {
 
 	private Long idDocente;

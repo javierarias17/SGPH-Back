@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityNotFoundException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -83,28 +84,24 @@ public class GestionarAsignaturaGatewayImplAdapter implements GestionarAsignatur
 	 * @see co.edu.unicauca.sgph.asignatura.aplication.output.GestionarAsignaturaGatewayIntPort#guardarAsignatura(co.edu.unicauca.sgph.asignatura.domain.model.Asignatura)
 	 */
 	@Override
+	@Transactional
 	public Asignatura guardarAsignatura(Asignatura asignatura) {
-		Optional<AsignaturaEntity> entidad=Optional.empty();
-		AsignaturaEntity entidadGuardar=null;
-		if(Objects.nonNull(asignatura.getIdAsignatura())) {
-			entidad = this.asignaturaRepositoryInt.findById(asignatura.getIdAsignatura());
-			entidadGuardar = entidad.get();
-		}
-		if (entidad.isPresent()) {
-			AsignaturaEntity entidadGuardarMaper = this.asignaturaMapper.map(asignatura, AsignaturaEntity.class);
-			entidadGuardarMaper.setIdAsignatura(entidadGuardar.getIdAsignatura());
-			entidadGuardarMaper.setEstado(entidadGuardar.getEstado());
-			entidadGuardar = entidadGuardarMaper;
-		} else {
-			entidadGuardar = this.asignaturaMapper.map(asignatura, AsignaturaEntity.class);
-			entidadGuardar.setEstado(EstadoAsignaturaEnum.ACTIVO);
-		}
-		return this.asignaturaMapper.map(
-				this.asignaturaRepositoryInt.save(
-						entidadGuardar
-				),
-				Asignatura.class);
+		 AsignaturaEntity entidadGuardar;
 
+		    if (asignatura.getIdAsignatura() == null) {
+		        entidadGuardar = asignaturaRestMapper.toAsignaturaEntity(asignatura);
+		        entidadGuardar.setEstado(EstadoAsignaturaEnum.ACTIVO);
+		    } else {
+		        AsignaturaEntity entidadExistente = asignaturaRepositoryInt
+		                .findById(asignatura.getIdAsignatura())
+		                .orElseThrow(() -> new EntityNotFoundException("Asignatura no encontrada con ID: " + asignatura.getIdAsignatura()));
+		        asignaturaRestMapper.updateEntityFromAsignatura(asignatura, entidadExistente);
+		        entidadGuardar = entidadExistente;
+		    }
+
+		    AsignaturaEntity entidadGuardada = asignaturaRepositoryInt.save(entidadGuardar);
+		    // Convertir la entidad guardada al objeto de dominio Asignatura y retornar
+		    return asignaturaRestMapper.toAsignaturaFromEntity(entidadGuardada);
 	}
 	
 	/** 

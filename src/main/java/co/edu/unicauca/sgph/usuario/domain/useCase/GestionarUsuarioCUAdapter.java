@@ -67,4 +67,9 @@ public class GestionarUsuarioCUAdapter implements GestionarUsuarioCUIntPort {
 	public UsuarioReservasDTO obtenerDatosUsuarioExterno(String username) {
 		return this.gestionarUsuarioGatewayIntPort.obtenerDatosUsuarioExterno(username);
 	}
+
+	@Override
+	public Usuario consultarUsuarioAutenticado(String nombreUsuario) {
+		return this.gestionarUsuarioGatewayIntPort.consultarUsuarioPorNombreUsuario(nombreUsuario);
+	}
 }

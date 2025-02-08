@@ -12,8 +12,8 @@ import co.edu.unicauca.sgph.espaciofisico.infrastructura.input.validation.Existe
 import co.edu.unicauca.sgph.espaciofisico.infrastructura.input.validation.ValidationGroups;
 import co.edu.unicauca.sgph.espaciofisico.infrastructure.output.persistence.entity.EstadoEspacioFisicoEnum;
 
-@ExisteOidEspacioFisico(groups = ValidationGroups.OnCreate.class)
-@ExisteNombreEspacioFisico(groups = ValidationGroups.OnCreate.class)
+@ExisteOidEspacioFisico(groups = {ValidationGroups.OnCreate.class, ValidationGroups.OnUpdate.class})
+@ExisteNombreEspacioFisico(groups = {ValidationGroups.OnCreate.class, ValidationGroups.OnUpdate.class})
 public class EspacioFisicoInDTO {
 
 	private Long idEspacioFisico;

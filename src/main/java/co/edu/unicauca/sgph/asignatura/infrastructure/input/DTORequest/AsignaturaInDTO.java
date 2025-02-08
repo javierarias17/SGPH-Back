@@ -9,8 +9,8 @@ import co.edu.unicauca.sgph.asignatura.infrastructure.input.validation.ExisteCod
 import co.edu.unicauca.sgph.asignatura.infrastructure.input.validation.ExisteOidAsignatura;
 import co.edu.unicauca.sgph.espaciofisico.infrastructura.input.validation.ValidationGroups;
 
-@ExisteCodigoAsignatura(groups = ValidationGroups.OnCreate.class)
-@ExisteOidAsignatura(groups = ValidationGroups.OnCreate.class)
+@ExisteCodigoAsignatura(groups = {ValidationGroups.OnCreate.class, ValidationGroups.OnUpdate.class})
+@ExisteOidAsignatura(groups = {ValidationGroups.OnCreate.class, ValidationGroups.OnUpdate.class})
 public class AsignaturaInDTO {
 
 	private Long idAsignatura;

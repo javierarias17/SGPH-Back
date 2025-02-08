@@ -5,11 +5,14 @@ import java.util.List;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import co.edu.unicauca.sgph.agrupador.domain.model.AgrupadorEspacioFisico;
+import co.edu.unicauca.sgph.agrupador.infrastructure.output.persistence.entity.AgrupadorEspacioFisicoEntity;
 import co.edu.unicauca.sgph.asignatura.domain.model.Asignatura;
 import co.edu.unicauca.sgph.asignatura.infrastructure.input.DTORequest.AsignaturaInDTO;
 import co.edu.unicauca.sgph.asignatura.infrastructure.input.DTOResponse.AsignaturaOutDTO;
+import co.edu.unicauca.sgph.asignatura.infrastructure.output.persistence.entity.AsignaturaEntity;
 
 import org.mapstruct.Named;
 
@@ -23,6 +26,14 @@ public interface AsignaturaRestMapper {
     @Mapping(target = "idFacultad", source = "asignatura.programa.facultad.idFacultad")
 	AsignaturaOutDTO toAsignaturaOutDTO(Asignatura asignatura);
 
+	@Mapping(target = "idPrograma", source = "programa.idPrograma")
+    @Mapping(target = "lstIdAgrupadorEspacioFisico", source = "agrupadores", qualifiedByName = "toLstIdAgrupadorEspacioFisicoEntity")
+    @Mapping(target = "nombrePrograma", source = "programa.nombre")
+    @Mapping(target = "nombreFacultad", source = "programa.facultad.nombre")
+    @Mapping(target = "idFacultad", source = "programa.facultad.idFacultad")
+	@Mapping(target = "programa.facultad.programas", ignore = true)
+    AsignaturaOutDTO toAsignaturaOutDTOFromEntity(AsignaturaEntity asignaturaEntity);
+	
 	// Mapear de AsignaturaInDTO a Asignatura (para guardar/actualizar)
     @Mapping(target = "idAsignatura", source = "idAsignatura") // No se modifica el ID
     @Mapping(target = "programa", expression = "java(new Programa(asignaturaInDTO.getIdPrograma()))")
@@ -36,12 +47,22 @@ public interface AsignaturaRestMapper {
     @Mapping(target = "aplicaEspacioSecundario", source = "aplicaEspacioSecundario")
 	Asignatura toAsignatura(AsignaturaInDTO asignaturaInDTO);
 
+    @Mapping(target = "idAsignatura", ignore = true) // No mapea el ID para que se genere en persistencia
+    AsignaturaEntity toAsignaturaEntity(Asignatura asignatura);
+    
+    @Mapping(target = "programa.asignaturas", ignore = true)
+    Asignatura toAsignaturaFromEntity(AsignaturaEntity entity);
+    
+    @Mapping(target = "idAsignatura", ignore = true)
+    @Mapping(target = "programa", ignore = true) // suponiendo que no deseas actualizar el programa a través de este DTO
+    void updateEntityFromAsignatura(Asignatura asignatura, @MappingTarget AsignaturaEntity entity);
+    
 	@Named("handleNullList")
 	static List<Long> handleNullList(List<Long> lstIdAgrupadorEspacioFisico) {
 		return lstIdAgrupadorEspacioFisico != null ? lstIdAgrupadorEspacioFisico : new ArrayList<>();
 	}
 	List<AsignaturaOutDTO> toLstAsignaturaOutDTO(List<Asignatura> lstAsignatura);
-
+	
 	@Named("toAgrupadorEspacioFisico")
 	default List<AgrupadorEspacioFisico> toAgrupadorEspacioFisico(List<Long> lstIdAgrupadorEspacioFisico) {
 		if (lstIdAgrupadorEspacioFisico == null) {
@@ -67,4 +88,17 @@ public interface AsignaturaRestMapper {
 		}
 		return lstIdAgrupadorEspacioFisico;
 	}
+	
+	@Named("toLstIdAgrupadorEspacioFisicoEntity")
+	default List<Long> toLstIdAgrupadorEspacioFisicoEntity(List<AgrupadorEspacioFisicoEntity> agrupadores) {
+	    if (agrupadores == null) {
+	        return new ArrayList<>();
+	    }
+	    List<Long> lst = new ArrayList<>();
+	    for (AgrupadorEspacioFisicoEntity ae : agrupadores) {
+	        lst.add(ae.getIdAgrupadorEspacioFisico());
+	    }
+	    return lst;
+	}
+
 }

@@ -25,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import co.edu.unicauca.sgph.agrupador.infrastructure.output.persistence.entity.AgrupadorEspacioFisicoEntity;
@@ -84,63 +85,78 @@ public class GestionarEspacioFisicoGatewayImplAdapter implements GestionarEspaci
 	}
 
 	@Override
+	@Transactional
 	public EspacioFisico guardarEspacioFisico(EspacioFisico espacioFisico) {
-		// Mapear EspacioFisico a EspacioFisicoEntity
-	    EspacioFisicoEntity espacioFisicoEntity = modelMapper.map(espacioFisico, EspacioFisicoEntity.class);
+		EspacioFisicoEntity espacioFisicoEntity;
 
-	    // Guardar EspacioFisicoEntity si es necesario
-	    if (espacioFisicoEntity.getIdEspacioFisico() == null) {
+	    if (espacioFisico.getIdEspacioFisico() == null) {
+	        // Modo creación: mapear y persistir la nueva entidad
+	        espacioFisicoEntity = modelMapper.map(espacioFisico, EspacioFisicoEntity.class);
 	        espacioFisicoEntity = espacioFisicoRepositoryInt.save(espacioFisicoEntity);
 	    } else {
-	        EspacioFisicoEntity espacioFisicoEncontrado = espacioFisicoRepositoryInt.findById(espacioFisicoEntity.getIdEspacioFisico())
-	                .orElseThrow(() -> new EntityNotFoundException(
-	                        "Espacio Físico no encontrado con ID: " + espacioFisico.getIdEspacioFisico()));
+	        // Modo actualización:
+	        // 1. Recuperar la entidad existente por su ID
+	        EspacioFisicoEntity espacioFisicoEncontrado = espacioFisicoRepositoryInt
+	            .findById(espacioFisico.getIdEspacioFisico())
+	            .orElseThrow(() -> new EntityNotFoundException(
+	                    "Espacio Físico no encontrado con ID: " + espacioFisico.getIdEspacioFisico()));
 
-	        // Actualizar espacioFisicoEntity con el valor encontrado
-	        espacioFisicoEntity = espacioFisicoEncontrado;
+	        // 2. Configurar modelMapper para que omita:
+	        //    - El id del espacio físico
+	        //    - La propiedad 'ubicacion'
+	        //    - La colección de recursos (por ejemplo, recursosEspacioFisico)
+	        modelMapper.getConfiguration().setPropertyCondition(context -> context.getSource() != null);
+	        modelMapper.typeMap(EspacioFisico.class, EspacioFisicoEntity.class)
+	            .addMappings(mapper -> {
+	                mapper.skip(EspacioFisicoEntity::setIdEspacioFisico);
+	                mapper.skip(EspacioFisicoEntity::setUbicacion);
+	                mapper.skip(EspacioFisicoEntity::setRecursosEspacioFisico);
+	            });
+
+	        // 3. Mapear los nuevos valores sobre la entidad existente (sin modificar el id, la ubicación ni la colección de recursos)
+	        modelMapper.map(espacioFisico, espacioFisicoEncontrado);
+
+	        // 4. Guardar la entidad actualizada
+	        espacioFisicoEntity = espacioFisicoRepositoryInt.save(espacioFisicoEncontrado);
 	    }
 
-	    // Procesar los recursos asociados al espacio físico
+	    // Procesar los recursos asociados al espacio físico de forma manual
 	    List<RecursoEspacioFisicoEntity> recursosProcesados = new ArrayList<>();
 
 	    if (espacioFisico.getRecursosEspacioFisico() != null) {
 	        for (RecursoEspacioFisico recurso : espacioFisico.getRecursosEspacioFisico()) {
-	            // Validar que el recurso tiene un recurso físico asociado con ID válido
 	            if (recurso.getIdRecursoEspacioFisico() == null) {
 	                throw new IllegalArgumentException("El recurso físico enviado es inválido o no tiene ID.");
 	            }
 
-	            // Recuperar el recurso físico de la base de datos
-	            RecursoFisicoEntity recursoFisicoEntity = recursoFisicoRepositoryInt.findById(recurso.getIdRecursoEspacioFisico())
+	            RecursoFisicoEntity recursoFisicoEntity = recursoFisicoRepositoryInt
+	                    .findById(recurso.getIdRecursoEspacioFisico())
 	                    .orElseThrow(() -> new EntityNotFoundException(
 	                            "Recurso Físico no encontrado con ID: " + recurso.getIdRecursoEspacioFisico()));
 
-	            // Verificar si ya existe una relación entre el espacio físico y el recurso físico
-	            Optional<RecursoEspacioFisicoEntity> recursoExistente = recursoEspacioFisicoRepositoryInt.findByEspacioFisicoAndRecursoFisico(
-	                    espacioFisicoEntity.getIdEspacioFisico(),
-	                    recurso.getIdRecursoEspacioFisico()
-	            );
+	            Optional<RecursoEspacioFisicoEntity> recursoExistente = recursoEspacioFisicoRepositoryInt
+	                    .findByEspacioFisicoAndRecursoFisico(
+	                            espacioFisicoEntity.getIdEspacioFisico(),
+	                            recurso.getIdRecursoEspacioFisico()
+	                    );
 
 	            if (recursoExistente.isPresent()) {
-	                // Si ya existe, actualizar los atributos necesarios
 	                RecursoEspacioFisicoEntity recursoActual = recursoExistente.get();
-	                recursoActual.setCantidad(recurso.getCantidad()); // Actualizar cantidad
+	                recursoActual.setCantidad(recurso.getCantidad());
 	                recursosProcesados.add(recursoActual);
 	            } else {
-	                // Si no existe, crear uno nuevo
 	                RecursoEspacioFisicoEntity recursoNuevo = new RecursoEspacioFisicoEntity();
-	                recursoNuevo.setEspacioFisico(espacioFisicoEntity); // Asignar el espacio físico
-	                recursoNuevo.setRecursoFisico(recursoFisicoEntity); // Asignar el recurso físico
-	                recursoNuevo.setCantidad(recurso.getCantidad());    // Asignar la cantidad
+	                recursoNuevo.setEspacioFisico(espacioFisicoEntity);
+	                recursoNuevo.setRecursoFisico(recursoFisicoEntity);
+	                recursoNuevo.setCantidad(recurso.getCantidad());
 	                recursosProcesados.add(recursoNuevo);
 	            }
 	        }
 	    }
 
-	    // Guardar todos los recursos procesados
 	    recursoEspacioFisicoRepositoryInt.saveAll(recursosProcesados);
 
-	    // Retornar el espacio físico actualizado
+	    // Actualizar el objeto de dominio con el id persistido (opcional)
 	    espacioFisico.setIdEspacioFisico(espacioFisicoEntity.getIdEspacioFisico());
 	    return espacioFisico;
 	}

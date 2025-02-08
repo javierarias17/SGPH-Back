@@ -3,6 +3,7 @@ package co.edu.unicauca.sgph.curso.infrastructure.output.persistence.gateway;
 import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityNotFoundException;
 import javax.persistence.PersistenceContext;
 import javax.transaction.Transactional;
 
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import co.edu.unicauca.sgph.asignatura.infrastructure.output.persistence.entity.AsignaturaEntity;
 import co.edu.unicauca.sgph.curso.aplication.output.GestionarCursoGatewayIntPort;
 import co.edu.unicauca.sgph.curso.domain.model.Curso;
+import co.edu.unicauca.sgph.curso.infrastructure.input.mapper.CursoRestMapper;
 import co.edu.unicauca.sgph.curso.infrastructure.output.persistence.entity.CursoEntity;
 import co.edu.unicauca.sgph.curso.infrastructure.output.persistence.repository.CursoRepositoryInt;
 import co.edu.unicauca.sgph.periodoacademico.infrastructure.output.persistence.entity.PeriodoAcademicoEntity;
@@ -28,11 +30,14 @@ public class GestionarCursoGatewayImplAdapter implements GestionarCursoGatewayIn
 	private CursoRepositoryInt cursoRepositoryInt;
 	private PeriodoAcademicoRepositoryInt periodoAcademicoRepositoryInt;
 	private ModelMapper modelMapper;
+	private CursoRestMapper cursoRestMapper;
 
-	public GestionarCursoGatewayImplAdapter(CursoRepositoryInt cursoRepositoryInt, ModelMapper modelMapper, PeriodoAcademicoRepositoryInt periodoAcademicoRepositoryInt) {
+	public GestionarCursoGatewayImplAdapter(CursoRepositoryInt cursoRepositoryInt, ModelMapper modelMapper, PeriodoAcademicoRepositoryInt periodoAcademicoRepositoryInt,
+			CursoRestMapper cursoRestMapper) {
 		this.cursoRepositoryInt = cursoRepositoryInt;
 		this.periodoAcademicoRepositoryInt = periodoAcademicoRepositoryInt;
 		this.modelMapper = modelMapper;
+		this.cursoRestMapper = cursoRestMapper;
 	}
 
 	/**
@@ -53,15 +58,27 @@ public class GestionarCursoGatewayImplAdapter implements GestionarCursoGatewayIn
 	@Override
 	@Transactional
 	public Curso guardarCurso(Curso curso) {
-		PeriodoAcademicoEntity periodoAcademicoEntity = this.periodoAcademicoRepositoryInt.consultarPeriodoAcademicoVigente();
-		CursoEntity cursoEntity = this.modelMapper.map(curso, CursoEntity.class);
-		cursoEntity.setPeriodoAcademico(periodoAcademicoEntity);
-	    CursoEntity savedEntity = this.cursoRepositoryInt.save(cursoEntity);
+		CursoEntity cursoEntity;
+        // Supongamos que obtienes el periodo académico vigente:
+        PeriodoAcademicoEntity periodoAcademicoEntity = this.periodoAcademicoRepositoryInt.consultarPeriodoAcademicoVigente();
 
-	    // Forzar sincronización con la base de datos
-	    this.cursoRepositoryInt.flush();
+        if (curso.getIdCurso() == null) {
+            // Modo creación: convierte el objeto de dominio a entidad
+            cursoEntity = cursoRestMapper.toCursoEntity(curso);
+            cursoEntity.setPeriodoAcademico(periodoAcademicoEntity);
+        } else {
+            // Modo actualización: recupera la entidad existente y actualízala
+            CursoEntity entidadExistente = cursoRepositoryInt.findById(curso.getIdCurso())
+                .orElseThrow(() -> new EntityNotFoundException("Curso no encontrado con ID: " + curso.getIdCurso()));
+            cursoRestMapper.updateEntityFromCurso(curso, entidadExistente);
+            entidadExistente.setPeriodoAcademico(periodoAcademicoEntity);
+            cursoEntity = entidadExistente;
+        }
 
-	    return this.modelMapper.map(savedEntity, Curso.class);
+        CursoEntity entidadGuardada = cursoRepositoryInt.save(cursoEntity);
+        cursoRepositoryInt.flush();
+
+        return cursoRestMapper.toCursoFromEntity(entidadGuardada);
 	}
 
 	/**

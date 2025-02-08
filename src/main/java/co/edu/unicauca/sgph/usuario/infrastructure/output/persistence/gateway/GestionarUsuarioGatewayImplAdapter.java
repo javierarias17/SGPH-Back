@@ -28,6 +28,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.edu.unicauca.sgph.persona.domain.model.Persona;
+import co.edu.unicauca.sgph.persona.domain.model.TipoIdentificacion;
 import co.edu.unicauca.sgph.persona.infrastructure.output.persistence.gateway.GestionarPersonaGatewayImplAdapter;
 import co.edu.unicauca.sgph.programa.domain.model.Programa;
 import co.edu.unicauca.sgph.usuario.aplication.output.GestionarUsuarioGatewayIntPort;
@@ -329,7 +330,16 @@ public class GestionarUsuarioGatewayImplAdapter implements GestionarUsuarioGatew
 			usuario.setEstado(usuarioEntity.get().getEstado());
 			usuario.setPersona(new Persona());
 			usuario.getPersona().setEmail(usuarioEntity.get().getPersona().getEmail());
+			usuario.getPersona().setPrimerNombre(usuarioEntity.get().getPersona().getPrimerNombre());
+			usuario.getPersona().setSegundoNombre(usuarioEntity.get().getPersona().getSegundoNombre());
+			usuario.getPersona().setPrimerApellido(usuarioEntity.get().getPersona().getPrimerApellido());
+			usuario.getPersona().setSegundoApellido(usuarioEntity.get().getPersona().getSegundoApellido());
+			usuario.getPersona().setNumeroIdentificacion(usuarioEntity.get().getPersona().getNumeroIdentificacion());
+			TipoIdentificacion tipoIdentificacion = new TipoIdentificacion();
+			tipoIdentificacion.setCodigoTipoIdentificacion(usuarioEntity.get().getPersona().getTipoIdentificacion().getCodigoTipoIdentificacion());
+			usuario.getPersona().setTipoIdentificacion(tipoIdentificacion);
 
+			
 			// Manejar las colecciones manualmente
 			usuario.setRoles(usuarioEntity.get().getRoles().stream().map(obj -> {
 				Rol rol = new Rol();

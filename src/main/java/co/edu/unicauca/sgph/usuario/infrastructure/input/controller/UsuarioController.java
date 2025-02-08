@@ -165,4 +165,13 @@ public class UsuarioController extends CommonEJB {
 		return new UsuarioOutDTO();
 	}
 	
+	@GetMapping("/consultarUsuarioAutenticado")
+	private UsuarioOutDTO consultarUsuarioAutenticado(@RequestParam String nombreUsuario) {
+		Usuario usuario = this.gestionarUsuarioCUIntPort.consultarUsuarioAutenticado(nombreUsuario);
+		if (usuario != null) {
+			return this.usuarioRestMapper.toUsuarioOutDTO(usuario);
+		}
+		return new UsuarioOutDTO();
+	}
+	
 }

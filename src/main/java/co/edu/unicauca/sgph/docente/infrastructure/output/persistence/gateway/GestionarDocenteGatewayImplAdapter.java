@@ -64,8 +64,9 @@ public class GestionarDocenteGatewayImplAdapter implements GestionarDocenteGatew
 
 	@Override
 	public Docente guardarDocente(Docente docente) {
-		return this.modelMapper.map(this.docenteRepositoryInt.save(this.modelMapper.map(docente, DocenteEntity.class)),
-				Docente.class);
+		DocenteEntity entidadGuardada = this.docenteRepositoryInt.save(
+                this.modelMapper.map(docente, DocenteEntity.class));
+        return this.modelMapper.map(entidadGuardada, Docente.class);
 	}
 
 	/** 

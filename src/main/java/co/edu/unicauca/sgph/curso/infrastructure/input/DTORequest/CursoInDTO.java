@@ -7,7 +7,7 @@ import co.edu.unicauca.sgph.curso.infrastructura.input.validation.ExisteCursoCon
 import co.edu.unicauca.sgph.curso.infrastructura.input.validation.ExisteCursoPorAsignaturaActiva;
 import co.edu.unicauca.sgph.espaciofisico.infrastructura.input.validation.ValidationGroups;
 
-@ExisteCursoConMismoGrupo(groups = ValidationGroups.OnCreate.class)
+@ExisteCursoConMismoGrupo(groups = {ValidationGroups.OnCreate.class, ValidationGroups.OnUpdate.class})
 public class CursoInDTO {
 	private Long idCurso;
 

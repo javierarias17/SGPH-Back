@@ -87,12 +87,33 @@ public class AuthController {
 	@PostMapping("/login")
 	public ResponseEntity<JwtDto> login(@Valid @RequestBody LoginUsuario loginUsuario, BindingResult bindingResult) {
 		if (bindingResult.hasErrors()) {
-			return new ResponseEntity("Campos mal diligenciados", HttpStatus.BAD_REQUEST);
-		}
-		Authentication authentication = authenticationManager.authenticate(
-				new UsernamePasswordAuthenticationToken(loginUsuario.getNombreUsuario(), loginUsuario.getPassword()));
+	        return ResponseEntity.badRequest()
+	                .body(new JwtDto(null, loginUsuario.getNombreUsuario(), "ERROR", null, null));
+	    }
 
-		return this.validarAutenticarYGenerarJwt(authentication);
+	    try {
+	        UserDetails userDetails = userDetailsService.loadUserByUsername(loginUsuario.getNombreUsuario());
+	        UsuarioPrincipal usuarioPrincipal = (UsuarioPrincipal) userDetails;
+
+	        // Verificar si el usuario está activo antes de autenticar
+	        if (!"ACTIVO".equalsIgnoreCase(usuarioPrincipal.getEstado().toString())) {
+	            return ResponseEntity.ok(
+	                new JwtDto(null, usuarioPrincipal.getUsername(), "INACTIVO", usuarioPrincipal.getAuthorities(), 
+	                           usuarioPrincipal.getProgramas().stream()
+	                                .map(obj -> obj.getIdPrograma())
+	                                .collect(Collectors.toList()))
+	            );
+	        }
+
+	        Authentication authentication = authenticationManager.authenticate(
+	                new UsernamePasswordAuthenticationToken(loginUsuario.getNombreUsuario(), loginUsuario.getPassword()));
+
+	        return this.validarAutenticarYGenerarJwt(authentication);
+
+	    } catch (Exception e) {
+	        return ResponseEntity.ok()
+	                .body(new JwtDto(null, loginUsuario.getNombreUsuario(), "ERROR", null, null));
+	    }
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

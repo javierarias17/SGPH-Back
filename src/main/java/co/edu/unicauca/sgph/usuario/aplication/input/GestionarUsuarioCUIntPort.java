@@ -64,4 +64,6 @@ public interface GestionarUsuarioCUIntPort {
 	Usuario consultarUsuarioPorIdPersona(Long idPersona);
 	
 	public UsuarioReservasDTO obtenerDatosUsuarioExterno(String username);
+	
+	Usuario consultarUsuarioAutenticado(String nombreUsuario);
 }
